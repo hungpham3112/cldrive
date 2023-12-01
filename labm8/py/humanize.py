@@ -103,10 +103,7 @@ def Plural(quantity, singular, plural=None):
   Returns:
     A string.
   """
-  return "%s %s" % (
-    Commas(quantity) if quantity else quantity,
-    PluralWord(quantity, singular, plural),
-  )
+  return f"{Commas(quantity) if quantity else quantity} {PluralWord(quantity, singular, plural)}"
 
 
 def PluralWord(quantity, singular, plural=None):
@@ -136,12 +133,12 @@ def PluralWord(quantity, singular, plural=None):
 
   for ending in SIBILANT_ENDINGS:
     if singular.endswith(ending):
-      return "%ses" % singular
+      return f"{singular}es"
   if singular.endswith("o") and singular[-2:-1] not in VOWELS:
-    return "%ses" % singular
+    return f"{singular}es"
   if singular.endswith("y") and singular[-2:-1] not in VOWELS:
-    return "%sies" % singular[:-1]
-  return "%ss" % singular
+    return f"{singular[:-1]}ies"
+  return f"{singular}s"
 
 
 def WordSeries(words, conjunction="and"):
@@ -161,9 +158,9 @@ def WordSeries(words, conjunction="and"):
   elif num_words == 1:
     return words[0]
   elif num_words == 2:
-    return (" %s " % conjunction).join(words)
+    return f" {conjunction} ".join(words)
   else:
-    return "%s, %s %s" % (", ".join(words[:-1]), conjunction, words[-1])
+    return f'{", ".join(words[:-1])}, {conjunction} {words[-1]}'
 
 
 def AddIndefiniteArticle(noun):
@@ -178,10 +175,7 @@ def AddIndefiniteArticle(noun):
   """
   if not noun:
     raise ValueError("argument must be a word: {!r}".format(noun))
-  if noun[0] in VOWELS:
-    return "an " + noun
-  else:
-    return "a " + noun
+  return f"an {noun}" if noun[0] in VOWELS else f"a {noun}"
 
 
 def DecimalPrefix(
@@ -271,7 +265,7 @@ def _Prefix(quantity, unit, precision, separator, scale_callable, **args):
     A string.
   """
   if not quantity:
-    return "0%s%s" % (separator, unit)
+    return f"0{separator}{unit}"
 
   if quantity in [float("inf"), float("-inf")] or math.isnan(quantity):
     return "%f%s%s" % (quantity, separator, unit)
@@ -422,7 +416,7 @@ def PrettyFraction(number, spacer=""):
   """
   # We do not want small negative numbers to display as -0.
   if number < -FRACTION_ROUND_DOWN:
-    return "-%s" % PrettyFraction(-number)
+    return f"-{PrettyFraction(-number)}"
   number = abs(number)
   rounded = int(number)
   fract = number - rounded
@@ -434,13 +428,12 @@ def PrettyFraction(number, spacer=""):
     error = abs(fract - (float(numerator) / float(denominator)))
     errors_fractions.append((error, fraction_elements[numerator]))
   _, fraction_text = min(errors_fractions)
-  if rounded and fraction_text:
-    return "%d%s%s" % (rounded, spacer, fraction_text)
   if rounded:
-    return str(rounded)
-  if fraction_text:
-    return fraction_text
-  return "0"
+    if fraction_text:
+      return "%d%s%s" % (rounded, spacer, fraction_text)
+    else:
+      return str(rounded)
+  return fraction_text if fraction_text else "0"
 
 
 def Duration(duration, separator=" "):
@@ -461,17 +454,14 @@ def Duration(duration, separator=" "):
     try:
       delta = datetime.timedelta(seconds=int(duration))
     except OverflowError:
-      return ">=" + TimeDelta(datetime.timedelta.max)
+      return f">={TimeDelta(datetime.timedelta.max)}"
   delta_str = TimeDelta(delta, separator=separator)
   if isinstance(duration, float):
     value, unit = DecimalScale(duration % 1, "s", min_scale=-3)
     if value < 1 and unit == "ns":
       # Special case for sub-nanosecond durations. If there's a second
       # component, discard the sub-nanosecond component. Else, report <1ns.
-      if duration > 1:
-        return delta_str
-      else:
-        return "<1ns"
+      return delta_str if duration > 1 else "<1ns"
     elif duration > 1:
       if unit != "s":
         # Append sub-second component to string.
@@ -604,7 +594,7 @@ def AddOrdinalSuffix(value):
     A string containing the integer with a two-letter ordinal suffix.
   """
   if value < 0 or value != int(value):
-    raise ValueError("argument must be a non-negative integer: %s" % value)
+    raise ValueError(f"argument must be a non-negative integer: {value}")
 
   if value % 100 in (11, 12, 13):
     suffix = "th"

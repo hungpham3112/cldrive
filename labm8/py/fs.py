@@ -13,6 +13,7 @@
 # limitations under the License.
 """High level filesystem interface.
 """
+
 import contextlib
 import os.path
 import pathlib
@@ -38,8 +39,7 @@ class File404(Error):
 
 # A list of file names that frequently appear in file systems that are not
 # "useful".
-COMMONLY_IGNORED_FILE_NAMES = set(
-  [
+COMMONLY_IGNORED_FILE_NAMES = {
     "._.DS_Store",
     ".com.apple.timemachine.donotpresent",
     ".com.apple.timemachine.supported",
@@ -49,8 +49,7 @@ COMMONLY_IGNORED_FILE_NAMES = set(
     ".VolumeIcon.icns",
     ".VolumeIcon.ico",
     "autorun.inf",
-  ]
-)
+}
 
 
 def path(*components):
@@ -119,11 +118,7 @@ def is_subdir(child, parent):
   if len(child_path) < len(parent_path):
     return False
 
-  for i in range(len(parent_path)):
-    if parent_path[i] != child_path[i]:
-      return False
-
-  return True
+  return all(parent_path[i] == child_path[i] for i in range(len(parent_path)))
 
 
 # Directory history.
@@ -148,12 +143,11 @@ def cdpop():
 
   Returns absolute path to new working directory.
   """
-  if len(_cdhist) >= 1:
-    old = _cdhist.pop()  # Pop from history.
-    os.chdir(old)
-    return old
-  else:
+  if len(_cdhist) < 1:
     return pwd()
+  old = _cdhist.pop()  # Pop from history.
+  os.chdir(old)
+  return old
 
 
 def pwd():
@@ -205,10 +199,7 @@ def isdir(*components):
   """
   Return whether a path exists, and is a directory.
   """
-  if components:
-    return os.path.isdir(path(*components))
-  else:
-    return False
+  return os.path.isdir(path(*components)) if components else False
 
 
 def ls(
@@ -459,10 +450,8 @@ def read(*components, **kwargs):
 
   ignore_comments = comment_char is not None
 
-  file = open(path(*components))
-  lines = file.readlines()
-  file.close()
-
+  with open(path(*components)) as file:
+    lines = file.readlines()
   # Multiple definitions to handle all cases.
   if ignore_comments:
     comment_line_re = re.compile(r"^\s*{char}".format(char=comment_char))
@@ -507,12 +496,9 @@ def du(*components, **kwargs):
 
   _path = path(*components)
   if not exists(_path):
-    raise Error("file '{}' not found".format(_path))
+    raise Error(f"file '{_path}' not found")
   size = os.stat(_path).st_size
-  if human_readable:
-    return humanize.BinaryPrefix(size, "B")
-  else:
-    return size
+  return humanize.BinaryPrefix(size, "B") if human_readable else size
 
 
 def files_from_list(*paths):
@@ -555,10 +541,8 @@ def directory_is_empty(directory: pathlib.Path) -> bool:
   Returns:
     True if directory is empty, else False.
   """
-  for _, subdirs, files in os.walk(path(directory)):
-    if subdirs or files:
-      return False
-  return True
+  return not any(subdirs or files
+                 for _, subdirs, files in os.walk(path(directory)))
 
 
 @contextlib.contextmanager
@@ -600,10 +584,8 @@ def TemporaryWorkingDir(prefix: str = "phd_") -> pathlib.Path:
   # getcwd() will raise FileNotFoundError if the current workind directory
   # does not exist.
   old_directory = None
-  try:
+  with contextlib.suppress(FileNotFoundError):
     old_directory = os.getcwd()
-  except FileNotFoundError:
-    pass
   # Create a temporary directory, change to it, and return the path to the user.
   with tempfile.TemporaryDirectory(prefix=prefix) as d:
     os.chdir(d)
@@ -715,7 +697,7 @@ def AtomicWrite(
     try:
       os.remove(tmp_filename)
     except OSError as e:
-      exc = OSError("%s. Additional errors cleaning up: %s" % (exc, e))
+      exc = OSError(f"{exc}. Additional errors cleaning up: {e}")
     raise exc
 
 

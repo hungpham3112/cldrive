@@ -100,8 +100,7 @@ def dict_values(src):
   """
   for v in src.values():
     if isinstance(v, dict):
-      for v in dict_values(v):
-        yield v
+      yield from dict_values(v)
     else:
       yield v
 
@@ -241,10 +240,8 @@ def Chunkify(
     An iterator over chunks of the input iterable.
   """
   i = iter(iterable)
-  piece = list(itertools.islice(i, chunk_size))
-  while piece:
+  while piece := list(itertools.islice(i, chunk_size)):
     yield piece
-    piece = list(itertools.islice(i, chunk_size))
 
 
 def DeleteKeys(d, keys):

@@ -101,9 +101,6 @@ def DriveToDataFrame(
     # A value error could be raised by pd.read_csv() if the columns do not
     # conform to the started dtypes.
     raise CldriveCrash(str(e))
-  except UnicodeDecodeError:
-    raise CldriveCrash("Failed to decode output")
-
   # Pandas will interpret empty string as NaN. Replace NaN with empty strings.
   df["build_opts"].fillna("", inplace=True)
   df["kernel"].fillna("", inplace=True)

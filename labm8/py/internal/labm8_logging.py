@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Internal logging library implementation."""
+
 import fnmatch
 import functools
 import logging
@@ -38,7 +39,7 @@ absl_flags.DEFINE_list(
 # This is a set of module ids for the modules that disclaim key flags.
 # This module is explicitly added to this set so that we never consider it to
 # define key flag.
-disclaim_module_ids = set([id(sys.modules[__name__])])
+disclaim_module_ids = {id(sys.modules[__name__])}
 
 
 def get_module_object_and_name(globals_dict):
@@ -107,8 +108,7 @@ def Log(calling_module_name: str, level: int, msg, *args, **kwargs):
   """
   module_level = GetModuleVerbosity(calling_module_name)
   if level <= module_level:
-    print_context = kwargs.pop("print_context", None)
-    if print_context:
+    if print_context := kwargs.pop("print_context", None):
       with print_context():
         absl_logging.info(msg, *args, **kwargs)
     else:
@@ -124,8 +124,7 @@ def Fatal(msg, *args, **kwargs):
 @absl_logging.skip_log_prefix
 def Error(msg, *args, **kwargs):
   """Logs an error message."""
-  print_context = kwargs.pop("print_context", None)
-  if print_context:
+  if print_context := kwargs.pop("print_context", None):
     with print_context():
       absl_logging.error(msg, *args, **kwargs)
   else:
@@ -135,8 +134,7 @@ def Error(msg, *args, **kwargs):
 @absl_logging.skip_log_prefix
 def Warning(msg, *args, **kwargs):
   """Logs a warning message."""
-  print_context = kwargs.pop("print_context", None)
-  if print_context:
+  if print_context := kwargs.pop("print_context", None):
     with print_context():
       absl_logging.warning(msg, *args, **kwargs)
   else:

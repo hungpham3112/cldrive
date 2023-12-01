@@ -29,11 +29,10 @@ def FindRunfilesDirectory() -> typing.Optional[pathlib.Path]:
   """
   # Follow symlinks, looking for my module space
   stub_filename = os.path.abspath(__file__)
-  module_space = stub_filename + ".runfiles"
+  module_space = f"{stub_filename}.runfiles"
   if os.path.isdir(module_space):
     return pathlib.Path(module_space)
-  match = RUNFILES_PATTERN.match(os.path.abspath(__file__))
-  if match:
+  if match := RUNFILES_PATTERN.match(os.path.abspath(__file__)):
     return pathlib.Path(match.group(1))
   return None
 
@@ -70,7 +69,7 @@ def DataPath(
       return FindRunfilesDirectory()
   runfiles = FindRunfilesDirectory()
   real_path = runfiles / path if runfiles else pathlib.Path(path).absolute()
-  if must_exist and not (real_path.is_file() or real_path.is_dir()):
+  if must_exist and not real_path.is_file() and not real_path.is_dir():
     raise FileNotFoundError(f"No such file or directory: '{path}'")
   return real_path
 
@@ -283,9 +282,8 @@ class Workspace(object):
 
     print(f"\r\033[KCollected {len(all_targets)} transitive deps")
     paths = [
-      self.MaybeTargetToPath(target)
-      for target in all_targets
-      if not target in excluded_targets
+        self.MaybeTargetToPath(target) for target in all_targets
+        if target not in excluded_targets
     ]
     return [path for path in paths if path]
 

@@ -52,12 +52,8 @@ def gen_data_blocks(
     if arg.is_pointer:
       array_str = to_array_str(array)
 
-      flags = "CL_MEM_COPY_HOST_PTR"
-      if arg.is_const:
-        flags += " | CL_MEM_READ_ONLY"
-      else:
-        flags += " | CL_MEM_READ_WRITE"
-
+      flags = "CL_MEM_COPY_HOST_PTR" + (" | CL_MEM_READ_ONLY" if arg.is_const
+                                        else " | CL_MEM_READ_WRITE")
       setup_c.append(
         f"""\
     {ctype} host_{i}[{array.size}] = {array_str};
@@ -396,7 +392,7 @@ int main(int argc, char** argv) {{
     check_error("clBuildProgram", build_err);
     """
 
-  if not compile_only or (compile_only and create_kernel):
+  if not compile_only or create_kernel:
     kernel_name_ = _args.GetKernelName(src)
     c += f"""
     cl_kernel kernels[128];

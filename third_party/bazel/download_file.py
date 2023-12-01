@@ -72,11 +72,8 @@ def download_properties(root_dir):
 
 
 def cache_entry(args):
-  if args.v:
-    h = args.v
-  else:
-    h = sha1(args.u.encode("utf-8")).hexdigest()
-  name = "%s-%s" % (path.basename(args.o), h)
+  h = args.v if args.v else sha1(args.u.encode("utf-8")).hexdigest()
+  name = f"{path.basename(args.o)}-{h}"
   return path.join(CACHE_DIR, name)
 
 
@@ -101,18 +98,18 @@ if not path.exists(cache_ent):
     safe_mkdirs(path.dirname(cache_ent))
   except OSError as err:
     print(
-      "error creating directory %s: %s" % (path.dirname(cache_ent), err),
-      file=stderr,
+        f"error creating directory {path.dirname(cache_ent)}: {err}",
+        file=stderr,
     )
     exit(1)
-  print("Download %s" % src_url, file=stderr)
+  print(f"Download {src_url}", file=stderr)
   try:
     check_call(["curl", "--proxy-anyauth", "-ksSfLo", cache_ent, src_url])
   except OSError as err:
     print("could not invoke curl: %s\nis curl installed?" % err, file=stderr)
     exit(1)
   except CalledProcessError as err:
-    print("error using curl: %s" % err, file=stderr)
+    print(f"error using curl: {err}", file=stderr)
     exit(1)
 if args.v:
   have = hash_file(sha1(), cache_ent).hexdigest()
@@ -125,7 +122,7 @@ if args.v:
       remove(cache_ent)
     except OSError as err:
       if path.exists(cache_ent):
-        print("error removing %s: %s" % (cache_ent, err), file=stderr)
+        print(f"error removing {cache_ent}: {err}", file=stderr)
     exit(1)
 exclude = []
 if args.x:
@@ -137,7 +134,7 @@ if args.exclude_java_sources:
         if n.endswith(".java"):
           exclude.append(n)
   except (BadZipfile, LargeZipFile) as err:
-    print("error opening %s: %s" % (cache_ent, err), file=stderr)
+    print(f"error opening {cache_ent}: {err}", file=stderr)
     exit(1)
 if args.unsign:
   try:
@@ -146,19 +143,19 @@ if args.unsign:
         if n.endswith(".RSA") or n.endswith(".SF") or n.endswith(".LIST"):
           exclude.append(n)
   except (BadZipfile, LargeZipFile) as err:
-    print("error opening %s: %s" % (cache_ent, err), file=stderr)
+    print(f"error opening {cache_ent}: {err}", file=stderr)
     exit(1)
 safe_mkdirs(path.dirname(args.o))
 if exclude:
   try:
     shutil.copyfile(cache_ent, args.o)
   except (shutil.Error, IOError) as err:
-    print("error copying to %s: %s" % (args.o, err), file=stderr)
+    print(f"error copying to {args.o}: {err}", file=stderr)
     exit(1)
   try:
     check_call(["zip", "-d", args.o] + exclude)
   except CalledProcessError as err:
-    print("error removing files from zip: %s" % err, file=stderr)
+    print(f"error removing files from zip: {err}", file=stderr)
     exit(1)
 else:
   try:
@@ -167,5 +164,5 @@ else:
     try:
       shutil.copyfile(cache_ent, args.o)
     except (shutil.Error, IOError) as err:
-      print("error copying to %s: %s" % (args.o, err), file=stderr)
+      print(f"error copying to {args.o}: {err}", file=stderr)
       exit(1)

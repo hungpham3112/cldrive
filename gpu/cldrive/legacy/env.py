@@ -116,10 +116,7 @@ class OpenCLEnvironment(object):
       universal_newlines=True,
       env=env,
     )
-    if stdin:
-      stdout, stderr = process.communicate(stdin)
-    else:
-      stdout, stderr = process.communicate()
+    stdout, stderr = process.communicate(stdin) if stdin else process.communicate()
     process.stdout, process.stderr = stdout, stderr
     return process
 
@@ -139,12 +136,11 @@ class OpenCLEnvironment(object):
     all_envs = {env.name: env for env in GetOpenClEnvironments()}
     if env_name in all_envs:
       return all_envs[env_name]
-    else:
-      available = "\n".join(f"    {n}" for n in sorted(all_envs.keys()))
-      raise LookupError(
-        f"Requested OpenCL environment not available: '{env_name}'.\n"
-        f"Available OpenCL devices:\n{available}"
-      )
+    available = "\n".join(f"    {n}" for n in sorted(all_envs.keys()))
+    raise LookupError(
+      f"Requested OpenCL environment not available: '{env_name}'.\n"
+      f"Available OpenCL devices:\n{available}"
+    )
 
 
 class OclgrindOpenCLEnvironment(OpenCLEnvironment):
@@ -186,7 +182,7 @@ def host_os() -> str:
       operating system type, <release> is the release version, and
       <arch> is 32 or 64 bit.
   """
-  if sys.platform == "linux" or sys.platform == "linux2":
+  if sys.platform in ["linux", "linux2"]:
     dist = platform.linux_distribution()
     system, release = dist[0], dist[1]
   else:

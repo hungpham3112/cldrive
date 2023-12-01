@@ -89,7 +89,7 @@ app.DEFINE_boolean(
 def main(argv):
   """Main entry point."""
   if len(argv) > 1:
-    app.Warning("Unknown arguments: '{}'.".format(" ".join(argv[1:])))
+    app.Warning(f"""Unknown arguments: '{" ".join(argv[1:])}'.""")
 
   if FLAGS.ls_env:
     env.PrintOpenClEnvironments()
@@ -144,9 +144,8 @@ def main(argv):
     else:
       np.set_printoptions(threshold=np.nan)
       args_ = [
-        arg
-        for arg in args.GetKernelArguments(src)
-        if not arg.address_space == "local"
+          arg for arg in args.GetKernelArguments(src)
+          if arg.address_space != "local"
       ]
       assert len(args_) == len(outputs)
       for arr, arg in zip(outputs, args_):
