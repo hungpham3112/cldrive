@@ -23,7 +23,7 @@ NRUN = 10
 NUM_GPU = 1
 verbose_cldrive = False
 device_num_sm = 72  # {"GPU|NVIDIA|NVIDIA_GeForce_RTX_3090|535.86.05|3.0": 82}
-BACKUPED_LIST = list(os.path.splitext(path)[0] for path in os.listdir(BACKUP_DIR))
+BACKUPED_LIST = [os.path.splitext(path)[0] for path in os.listdir(BACKUP_DIR)]
 
 random.seed(2610)
 
@@ -38,7 +38,7 @@ def getOpenCLPlatforms() -> None:
     """
     try:
         cmd = subprocess.Popen(
-            "{} --clinfo".format(CLDRIVE).split(),
+            f"{CLDRIVE} --clinfo".split(),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
@@ -49,10 +49,7 @@ def getOpenCLPlatforms() -> None:
     except Exception as e:
         logging.error(cmd)
         logging.error(e)
-    CL_PLATFORMS = list(
-        platform for platform in stdout.split("\n") if len(platform) > 0
-    )
-    return CL_PLATFORMS
+    return [platform for platform in stdout.split("\n") if len(platform) > 0]
 
 
 def RunCLDrive(
@@ -77,31 +74,17 @@ def RunCLDrive(
     tdir = tempfile.mkdtemp()
 
     with tempfile.NamedTemporaryFile(
-        "w", prefix="benchpress_opencl_cldrive", suffix=".cl", dir=tdir
-    ) as f:
+            "w", prefix="benchpress_opencl_cldrive", suffix=".cl", dir=tdir
+        ) as f:
         if header_file:
             with tempfile.NamedTemporaryFile(
-                "w", prefix="benchpress_opencl_clheader", suffix=".h", dir=tdir
-            ) as hf:
-                f.write(
-                    '#include "{}"\n{}'.format(
-                        pathlib.Path(hf.name).resolve().name, src
-                    )
-                )
+                            "w", prefix="benchpress_opencl_clheader", suffix=".h", dir=tdir
+                        ) as hf:
+                f.write(f'#include "{pathlib.Path(hf.name).resolve().name}"\n{src}')
                 f.flush()
                 hf.write(header_file)
                 hf.flush()
-                cmd = '{} {} --srcs={} --cl_build_opt="-I{}{}" --num_runs={} --gsize={} --lsize={} --envs={}'.format(
-                    "timeout -s9 {}".format(timeout) if timeout > 0 else "",
-                    CLDRIVE,
-                    src_file,
-                    pathlib.Path(hf.name).resolve().parent,
-                    ",{}".format(",".join(extra_args)) if len(extra_args) > 0 else "",
-                    num_runs,
-                    gsize,
-                    lsize,
-                    cl_platform,
-                )
+                cmd = f"""{f"timeout -s9 {timeout}" if timeout > 0 else ""} {CLDRIVE} --srcs={src_file} --cl_build_opt="-I{pathlib.Path(hf.name).resolve().parent}{f',{",".join(extra_args)}' if len(extra_args) > 0 else ""}" --num_runs={num_runs} --gsize={gsize} --lsize={lsize} --envs={cl_platform}"""
                 if verbose_cldrive:
                     print(cmd)
                     # print(src)
@@ -116,17 +99,17 @@ def RunCLDrive(
             # f.write(src)
             f.flush()
             cmd = "{} {} --srcs={} {} --num_runs={} --gsize={} --lsize={} --envs={} --mem_analysis_dir={}".format(
-                "timeout -s9 {}".format(timeout) if timeout > 0 else "",
+                f"timeout -s9 {timeout}" if timeout > 0 else "",
                 CLDRIVE,
                 src_file,
-                "--cl_build_opt={}".format(",".join(extra_args))
+                f'--cl_build_opt={",".join(extra_args)}'
                 if len(extra_args) > 0
                 else "",
                 num_runs,
                 gsize,
                 lsize,
                 cl_platform,
-                MEM_ANALYSIS_DIR
+                MEM_ANALYSIS_DIR,
             )
             if verbose_cldrive:
                 print(cmd)

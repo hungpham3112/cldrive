@@ -56,9 +56,5 @@ def ShellEscapeList(words):
   if os.name == "nt":
     return " ".join(words)
 
-  s = ""
-  for word in words:
-    # Single quote word, and replace each ' in word with '"'"'
-    s += "'" + word.replace("'", "'\"'\"'") + "' "
-
+  s = "".join("'" + word.replace("'", "'\"'\"'") + "' " for word in words)
   return s[:-1]

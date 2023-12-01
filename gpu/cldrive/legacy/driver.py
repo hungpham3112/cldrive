@@ -123,7 +123,7 @@ class NDRange(typing.NamedTuple):
       ValueError
     """
     components = string.split(",")
-    if not len(components) == 3:
+    if len(components) != 3:
       raise ValueError(f"invalid NDRange '{string}'")
     x, y, z = int(components[0]), int(components[1]), int(components[2])
     return NDRange(x, y, z)
@@ -216,7 +216,7 @@ def DriveKernel(
 
   # Check that the number of inputs is correct.
   args_with_inputs = [
-    i for i, arg in enumerate(args) if not arg.address_space == "local"
+      i for i, arg in enumerate(args) if arg.address_space != "local"
   ]
   app.AssertOrRaise(
     len(args_with_inputs) == len(inputs),
@@ -254,10 +254,7 @@ def DriveKernel(
     tmp_file.flush()
 
     # Enforce timeout using sigkill.
-    if timeout > 0:
-      cli = ["timeout", "--signal=9", str(int(timeout))]
-    else:
-      cli = []
+    cli = ["timeout", "--signal=9", str(timeout)] if timeout > 0 else []
     cli += [sys.executable, __file__, porcelain_job_file]
 
     cli_str = " ".join(cli)
@@ -284,7 +281,7 @@ def DriveKernel(
     #
     # FIXME: I'm seeing a number of SIGABRT return codes which I can't explain.
     # However, ignoring them seems to not cause a problem ...
-    if status != 0 and status != -Signals["SIGABRT"].value:
+    if status not in [0, -Signals["SIGABRT"].value]:
       # A negative return code means a signal. Try and convert the value into a
       # signal name.
       with suppress(ValueError):

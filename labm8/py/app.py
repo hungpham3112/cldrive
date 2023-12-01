@@ -219,7 +219,7 @@ def GetVerbosity() -> int:
 
 def _MaybeColorizeLog(color: str, msg: str, *args) -> str:
   """Conditionally apply shell colorization to the given format string."""
-  string = str(msg) % args
+  string = msg % args
   if FLAGS.log_colors:
     return f"{shell.ShellEscapeCodes.BOLD}{color}{string}{shell.ShellEscapeCodes.END}"
   else:
@@ -317,7 +317,7 @@ def SetLogLevel(level: int) -> None:
 # This is a set of module ids for the modules that disclaim key flags.
 # This module is explicitly added to this set so that we never consider it to
 # define key flag.
-disclaim_module_ids = set([id(sys.modules[__name__])])
+disclaim_module_ids = {id(sys.modules[__name__])}
 
 
 @functools.lru_cache(maxsize=1)
@@ -746,10 +746,10 @@ def GetGithubCommitUrl(
   remote_url = remote_url or GIT_URL
   commit_hash = commit_hash or GIT_COMMIT
 
-  m = re.match(f"git@github\.com:([^/]+)/(.+)\.git", remote_url)
-  if not m:
+  if m := re.match(f"git@github\.com:([^/]+)/(.+)\.git", remote_url):
+    return f"https://github.com/{m.group(1)}/{m.group(2)}/commit/{commit_hash}"
+  else:
     return None
-  return f"https://github.com/{m.group(1)}/{m.group(2)}/commit/{commit_hash}"
 
 
 def FormatShortRevision(html: bool = False) -> str:

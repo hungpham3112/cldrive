@@ -162,7 +162,7 @@ class Subprocess(object):
 
 
 def is_linux():
-  return platform == "linux" or platform == "linux2"
+  return platform in ["linux", "linux2"]
 
 
 def is_mac():
@@ -218,7 +218,7 @@ def sed(match, replacement, path, modifiers=""):
 
       $ export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:$PATH"
   """
-  cmd = "sed -r -i 's/%s/%s/%s' %s" % (match, replacement, modifiers, path)
+  cmd = f"sed -r -i 's/{match}/{replacement}/{modifiers}' {path}"
 
   process = Subprocess(cmd, shell=True)
   ret, out, err = process.run(timeout=60)
@@ -236,9 +236,7 @@ def echo(*args, **kwargs):
   """
   msg = args[:-1]
   path = fs.path(args[-1])
-  append = kwargs.pop("append", False)
-
-  if append:
+  if append := kwargs.pop("append", False):
     with open(path, "a") as file:
       print(*msg, file=file, **kwargs)
   else:
@@ -281,7 +279,7 @@ def which(program, path=None):
   """
   # If path is not given, read the $PATH environment variable.
   path = path or os.environ["PATH"].split(os.pathsep)
-  abspath = True if os.path.split(program)[0] else False
+  abspath = bool(os.path.split(program)[0])
   if abspath:
     if fs.isexe(program):
       return program

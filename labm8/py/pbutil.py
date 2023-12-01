@@ -91,7 +91,7 @@ def FromString(
     raise DecodeError(e)
 
   if not uninitialized_okay and not message.IsInitialized():
-    raise DecodeError(f"Required fields not set")
+    raise DecodeError("Required fields not set")
 
   return message
 
@@ -154,7 +154,7 @@ def FromFile(
   suffix = suffixes[-1] if suffixes else ""
   try:
     with open_function(path, "rb") as f:
-      if suffix == ".txt" or suffix == ".pbtxt":
+      if suffix in [".txt", ".pbtxt"]:
         # Allow uninitialized fields here because we will catch the error later,
         # allowing us to report the path of the proto.
         FromString(f.read().decode("utf-8"), message, uninitialized_okay=True)
@@ -241,7 +241,7 @@ def ToFile(
   mode = "wt" if suffix in {".txt", ".pbtxt", ".json"} else "wb"
 
   with open_function(path, mode) as f:
-    if suffix == ".txt" or suffix == ".pbtxt":
+    if suffix in [".txt", ".pbtxt"]:
       f.write(google.protobuf.text_format.MessageToString(message))
     elif suffix == ".json":
       f.write(
@@ -279,10 +279,7 @@ def _TruncatedString(string: str, n: int = 80) -> str:
   Returns:
     The truncated string.
   """
-  if len(string) > n:
-    return string[: n - 3] + "..."
-  else:
-    return string
+  return f"{string[:n - 3]}..." if len(string) > n else string
 
 
 def _TruncateDictionaryStringValues(
@@ -424,14 +421,13 @@ def AssertFieldConstraint(
       returns False for the field's value.
   """
   value = AssertFieldIsSet(proto, field_name, fail_message)
-  if not constraint(value):
-    proto_class_name = type(proto).__name__
-    raise ProtoValueError(
-      fail_message
-      or f"Field fails constraint check: '{proto_class_name}.{field_name}'",
-    )
-  else:
+  if constraint(value):
     return value
+  proto_class_name = type(proto).__name__
+  raise ProtoValueError(
+    fail_message
+    or f"Field fails constraint check: '{proto_class_name}.{field_name}'",
+  )
 
 
 def RunProcessMessage(
@@ -469,7 +465,7 @@ def RunProcessMessage(
   stdout, _ = process.communicate(input_proto.SerializeToString())
 
   # TODO: Check signal value, not hardcoded a hardcoded kill signal.
-  if process.returncode == -9 or process.returncode == 9:
+  if process.returncode in [-9, 9]:
     raise ProtoWorkerTimeoutError(
       cmd=cmd, timeout_seconds=timeout_seconds, returncode=process.returncode,
     )

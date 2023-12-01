@@ -44,7 +44,7 @@ def getOpenCLPlatforms() -> None:
     """
     try:
         cmd = subprocess.Popen(
-            "{} --clinfo".format(CLDRIVE).split(),
+            f"{CLDRIVE} --clinfo".split(),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
@@ -55,10 +55,7 @@ def getOpenCLPlatforms() -> None:
     except Exception as e:
         logger.error(cmd)
         logger.error(e)
-    CL_PLATFORMS = list(
-        platform for platform in stdout.split("\n") if len(platform) > 0
-    )
-    return CL_PLATFORMS
+    return [platform for platform in stdout.split("\n") if len(platform) > 0]
 
 
 def RunCLDrive(
@@ -83,31 +80,17 @@ def RunCLDrive(
     tdir = tempfile.mkdtemp()
 
     with tempfile.NamedTemporaryFile(
-        "w", prefix="benchpress_opencl_cldrive", suffix=".cl", dir=tdir
-    ) as f:
+            "w", prefix="benchpress_opencl_cldrive", suffix=".cl", dir=tdir
+        ) as f:
         if header_file:
             with tempfile.NamedTemporaryFile(
-                "w", prefix="benchpress_opencl_clheader", suffix=".h", dir=tdir
-            ) as hf:
-                f.write(
-                    '#include "{}"\n{}'.format(
-                        pathlib.Path(hf.name).resolve().name, src
-                    )
-                )
+                            "w", prefix="benchpress_opencl_clheader", suffix=".h", dir=tdir
+                        ) as hf:
+                f.write(f'#include "{pathlib.Path(hf.name).resolve().name}"\n{src}')
                 f.flush()
                 hf.write(header_file)
                 hf.flush()
-                cmd = '{} {} --srcs={} --cl_build_opt="-I{}{}" --num_runs={} --gsize={} --lsize={} --envs={}'.format(
-                    "timeout -s9 {}".format(timeout) if timeout > 0 else "",
-                    CLDRIVE,
-                    f.name,
-                    pathlib.Path(hf.name).resolve().parent,
-                    ",{}".format(",".join(extra_args)) if len(extra_args) > 0 else "",
-                    num_runs,
-                    gsize,
-                    lsize,
-                    cl_platform,
-                )
+                cmd = f"""{f"timeout -s9 {timeout}" if timeout > 0 else ""} {CLDRIVE} --srcs={f.name} --cl_build_opt="-I{pathlib.Path(hf.name).resolve().parent}{f',{",".join(extra_args)}' if len(extra_args) > 0 else ""}" --num_runs={num_runs} --gsize={gsize} --lsize={lsize} --envs={cl_platform}"""
                 if verbose_cldrive:
                     print(cmd)
                     print(src)
@@ -122,10 +105,10 @@ def RunCLDrive(
             f.write(src)
             f.flush()
             cmd = "{} {} --srcs={} {} --num_runs={} --gsize={} --lsize={} --envs={} --output_format=null".format(
-                "timeout -s9 {}".format(timeout) if timeout > 0 else "",
+                f"timeout -s9 {timeout}" if timeout > 0 else "",
                 CLDRIVE,
                 f.name,
-                "--cl_build_opt={}".format(",".join(extra_args))
+                f'--cl_build_opt={",".join(extra_args)}'
                 if len(extra_args) > 0
                 else "",
                 num_runs,
@@ -315,19 +298,21 @@ if __name__ == "__main__":
     if not os.path.exists(BACKUP_DIR):
         os.makedirs(BACKUP_DIR, exist_ok=True)
     else:
-        BACKUPED_LIST = set(os.path.splitext(kernel)[0] for kernel in os.listdir(BACKUP_DIR))
-    
+        BACKUPED_LIST = {
+            os.path.splitext(kernel)[0] for kernel in os.listdir(BACKUP_DIR)
+        }
+
     need_calculate = []
     for kernel in os.listdir(KERNEL_DIR):
         kernel_path = os.path.join(KERNEL_DIR, kernel)
         if os.path.splitext(kernel_path)[1] != ".cl" or os.path.splitext(kernel)[0] in BACKUPED_LIST:
             continue
         need_calculate.append(kernel)
-        
+
     for kernel in tqdm(need_calculate):
         kernel_path = os.path.join(KERNEL_DIR, kernel)
         logger.info(f"Analyzing {kernel_path}")
-        
+
         analyzer = KernelMemoryAnalyzer(kernel_path)
         res_dict = analyzer.get_array_bound_relation()
         res_path = os.path.join(BACKUP_DIR, os.path.splitext(kernel)[0] + ".json")

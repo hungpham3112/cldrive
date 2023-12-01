@@ -96,17 +96,13 @@ if os.environ.get("TEST_TMPDIR"):
 
 def AbsolutePathToModule(file_path: str) -> str:
   """Determine module name from an absolute path."""
-  match = re.match(r".+\.runfiles/phd/(.+)", file_path)
-  if match:
-    # Strip everything up to the root of the project from the path.
-    module = match.group(1)
-    # Strip the .py suffix.
-    module = module[: -len(".py")]
-    # Replace path sep with module sep.
-    module = module.replace("/", ".")
-    return module
-  else:
+  if not (match := re.match(r".+\.runfiles/phd/(.+)", file_path)):
     raise OSError(f"Could not determine runfiles directory: {file_path}")
+  # Strip everything up to the root of the project from the path.
+  module = match.group(1)
+  # Strip the .py suffix.
+  module = module[: -len(".py")]
+  return module.replace("/", ".")
 
 
 def GuessModuleUnderTest(file_path: str) -> typing.Optional[str]:
@@ -349,7 +345,7 @@ def Fixture(
       return MyLogger(log_to_file=request.param)
   """
   if not scope:
-    raise TypeError(f"Test fixture must specify a scope")
+    raise TypeError("Test fixture must specify a scope")
 
   if namer:
     names = [namer(param) for param in params]

@@ -98,7 +98,7 @@ def MakeData(
 
   data = []
   for arg in _args.GetKernelArguments(src):
-    if arg.address_space == "global" or arg.address_space == "constant":
+    if arg.address_space in ["global", "constant"]:
       argdata = data_generator(arg.numpy_type, size * arg.vector_width)
     elif arg.address_space == "local":
       # we don't need to generate data for local memory

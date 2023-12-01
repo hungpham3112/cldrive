@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with cldrive.  If not, see <https://www.gnu.org/licenses/>.
 """OpenCL argument and type handling."""
+
 import re
 import typing
 
@@ -49,7 +50,7 @@ NUMPY_TYPES = {
 }
 
 # The inverse lookup table of NUMPY_TYPES.
-OPENCL_TYPES = dict((v, k) for k, v in NUMPY_TYPES.items())
+OPENCL_TYPES = {v: k for k, v in NUMPY_TYPES.items()}
 
 # C printf() function format specifiers for numpy types.
 FORMAT_SPECIFIERS = {
@@ -123,11 +124,7 @@ class KernelArg(object):
 
     self.name = self.ast.name if self.ast.name else ""
     self.quals = self.ast.quals
-    if len(self.quals):
-      self.quals_str = " ".join(self.quals) + " "
-    else:
-      self.quals_str = ""
-
+    self.quals_str = " ".join(self.quals) + " " if len(self.quals) else ""
     # Determine type name.
     try:
       if isinstance(self.ast.type.type, IdentifierType):
@@ -234,13 +231,12 @@ class ArgumentExtractor(NodeVisitor):
     self.name = None
 
   def visit_FuncDef(self, node):
-    # Only visit kernels, not all functions.
-    if "kernel" in node.decl.funcspec or "__kernel" in node.decl.funcspec:
-      self.kernel_count += 1
-      self.name = node.decl.name
-    else:
+    if ("kernel" not in node.decl.funcspec
+        and "__kernel" not in node.decl.funcspec):
       return
 
+    self.kernel_count += 1
+    self.name = node.decl.name
     # Ensure we've only visited one kernel.
     if self.kernel_count > 1:
       raise MultipleKernelsError(
@@ -278,8 +274,7 @@ def ParseSource(src: str) -> FileAST:
     # Strip pre-procesor line objects and rebuild the AST.
     # See: https://github.com/inducer/pycparserext/issues/27
     children = [x[1] for x in ast.children() if not isinstance(x[1], list)]
-    new_ast = FileAST(ext=children, coord=0)
-    return new_ast
+    return FileAST(ext=children, coord=0)
   except (ParseError, AssertionError) as e:
     raise OpenCLValueError(f"Syntax error: '{e}'") from e
 

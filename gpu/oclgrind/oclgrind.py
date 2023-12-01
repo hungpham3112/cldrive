@@ -76,10 +76,7 @@ def Exec(
     universal_newlines=True,
     env=env,
   )
-  if stdin:
-    stdout, stderr = process.communicate(stdin)
-  else:
-    stdout, stderr = process.communicate()
+  stdout, stderr = process.communicate(stdin) if stdin else process.communicate()
   process.stdout, process.stderr = stdout, stderr
   return process
 

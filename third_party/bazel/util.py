@@ -58,8 +58,8 @@ def hash_file(hash_obj, path):
   """
   with open(path, "rb") as f:
     while True:
-      b = f.read(8192)
-      if not b:
+      if b := f.read(8192):
+        hash_obj.update(b)
+      else:
         break
-      hash_obj.update(b)
   return hash_obj
